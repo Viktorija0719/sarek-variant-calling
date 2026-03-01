@@ -1,0 +1,26 @@
+# Project-relative paths (portable)
+input: "samplesheet.csv"
+outdir: "results"
+
+# Shared RSU reference resources (keep absolute)
+genome: "GATK.GRCh38"
+igenomes_base: "/home/groups/rsu/dauksaite_v/igenomes"
+
+wes: true
+intervals: "/home/groups/rsu/dauksaite_v/resources/Twist_WESwithRefSeq_umap_s100_70_no_blacklist_hg38_PAR_regions.bed"
+
+# Max germline toolset (stable)
+tools: "deepvariant,haplotypecaller,freebayes,strelka,manta,tiddit,cnvkit,indexcov,vep,snpeff,merge"
+
+sentieon_dnascope_emit_mode: "variant,gvcf"
+# Joint genotyping
+joint_germline: true
+
+# Shared annotation caches (keep absolute)
+vep_cache: "/home/groups/rsu/dauksaite_v/resources/sarek_cache/vep_cache"
+vep_cache_version: 115
+vep_genome: "GRCh38"
+vep_species: "homo_sapiens"
+
+snpeff_cache: "/home/groups/rsu/dauksaite_v/resources/sarek_cache/snpeff_cache"
+snpeff_db: "GRCh38.99"
