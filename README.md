@@ -19,11 +19,25 @@ source ~/.bashrc
 nextflow info
 ````
 
-## 2) Pull the pipeline 
+## 2) Pull the pipeline
 
 ```bash
-nextflow pull nf-core/sarek
+nextflow pull Viktorija0719/sarek -r varlofix-3.8.1
 ```
+
+## Quick test run (recommended)
+
+To test that everything works on RTU HPC, submit the PBS script:
+
+```bash
+qsub /path/to/run_sarek.pbs
+```
+
+The test samples used in this project come from:
+
+**Project:** PRJNA60113
+
+
 
 ## Run Sarek
 

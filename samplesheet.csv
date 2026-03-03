@@ -1,0 +1,6 @@
+patient,sex,status,sample,lane,fastq_1,fastq_2
+ERR031932,XY,0,ERR031932,L001,/home/groups/rsu/dauksaite_v/resources/test_genomic/ERR031932_1.fastq.gz,/home/groups/rsu/dauksaite_v/resources/test_genomic/ERR031932_2.fastq.gz
+ERR031933,XY,0,ERR031933,L001,/home/groups/rsu/dauksaite_v/resources/test_genomic/ERR031933_1.fastq.gz,/home/groups/rsu/dauksaite_v/resources/test_genomic/ERR031933_2.fastq.gz
+ERR031934,XY,0,ERR031934,L001,/home/groups/rsu/dauksaite_v/resources/test_genomic/ERR031934_1.fastq.gz,/home/groups/rsu/dauksaite_v/resources/test_genomic/ERR031934_2.fastq.gz
+ERR031964,XY,0,ERR031964,L001,/home/groups/rsu/dauksaite_v/resources/test_genomic/ERR031964_1.fastq.gz,/home/groups/rsu/dauksaite_v/resources/test_genomic/ERR031964_2.fastq.gz
+ERR032009,XX,0,ERR032009,L001,/home/groups/rsu/dauksaite_v/resources/test_genomic/ERR032009_1.fastq.gz,/home/groups/rsu/dauksaite_v/resources/test_genomic/ERR032009_2.fastq.gz

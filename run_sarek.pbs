@@ -32,7 +32,7 @@ test -f params.yaml
 test -f samplesheet.csv
 nextflow -version
 
-nextflow run nf-core/sarek -r 3.8.1 \
+nextflow run Viktorija0719/sarek -r 3.8.1-varlofix2 \
   -profile singularity \
   -params-file params.yaml \
   -c conf/rtu_pbs.config \
