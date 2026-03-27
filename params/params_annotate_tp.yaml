@@ -1,0 +1,30 @@
+input: "samplesheet_annotate_tp.csv"
+outdir: "results_annotation_tp"
+step: "annotate"
+
+genome: "GATK.GRCh38"
+igenomes_base: "/home/groups/rsu/dauksaite_v/igenomes"
+
+# Annotation only
+# Keep only annotation-related tools here.
+tools: "vep,snpeff,merge"
+
+# VEP cache
+vep_cache: "/home/groups/rsu/dauksaite_v/resources/sarek_cache/vep_cache"
+vep_cache_version: 115
+vep_genome: "GRCh38"
+vep_species: "homo_sapiens"
+
+# SnpEff cache
+snpeff_cache: "/home/groups/rsu/dauksaite_v/resources/sarek_cache/snpeff_cache"
+snpeff_db: "GRCh38.99"
+
+# Extra VEP plugin annotations
+vep_spliceai: true
+spliceai_snv: "/home/groups/rsu/dauksaite_v/resources/vep_data/spliceai_scores.masked.snv.hg38.vep1.vcf.gz"
+spliceai_snv_tbi: "/home/groups/rsu/dauksaite_v/resources/vep_data/spliceai_scores.masked.snv.hg38.vep1.vcf.gz.tbi"
+spliceai_indel: "/home/groups/rsu/dauksaite_v/resources/vep_data/spliceai_scores.masked.indel.hg38.vep1.vcf.gz"
+spliceai_indel_tbi: "/home/groups/rsu/dauksaite_v/resources/vep_data/spliceai_scores.masked.indel.hg38.vep1.vcf.gz.tbi"
+
+vep_mastermind: true
+mastermind_file: "/home/groups/rsu/dauksaite_v/resources/vep_data/mastermind_cited_variants_reference-2021.04.02-grch38.vcf.gz"

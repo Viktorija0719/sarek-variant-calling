@@ -10,7 +10,7 @@ wes: true
 intervals: "/home/groups/rsu/dauksaite_v/resources/Twist_WESwithRefSeq_umap_s100_70_no_blacklist_hg38_PAR_regions.bed"
 
 # Toolset
-tools: "deepvariant,haplotypecaller,freebayes,strelka,manta,tiddit,cnvkit,indexcov,vep,varlociraptor,snpeff,merge"
+tools: "deepvariant,haplotypecaller,freebayes,strelka,manta,tiddit,cnvkit,indexcov,vep,snpeff,merge"
 
 # Joint genotyping
 joint_germline: true

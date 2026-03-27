@@ -1,0 +1,15 @@
+input: "benchmark_structural_samplesheet.csv"
+outdir: "results_variantbenchmarking/structural"
+
+analysis: "germline"
+variant_type: "structural"
+method: "truvari"
+
+truth_id: "HG002"
+truth_vcf: "/home/groups/rsu/dauksaite_v/resources/truth_vcf/HG002_GRCh38_v5.0q_stvar.vcf.gz"
+regions_bed: "/home/groups/rsu/dauksaite_v/resources/truth_vcf/HG002_GRCh38_v5.0q_stvar.benchmark.bed"
+
+genome: "GATK.GRCh38"
+igenomes_base: "/home/groups/rsu/dauksaite_v/igenomes"
+
+preprocess: "deduplicate,filter_contigs"

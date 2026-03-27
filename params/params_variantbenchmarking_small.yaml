@@ -1,0 +1,16 @@
+input: "benchmark_small_samplesheet.csv"
+outdir: "results_variantbenchmarking/small"
+
+analysis: "germline"
+variant_type: "small"
+method: "rtgtools"
+
+truth_id: "HG002"
+truth_vcf: "/home/groups/rsu/dauksaite_v/resources/truth_vcf/HG002_GRCh38_v5.0q_smvar.vcf.gz"
+regions_bed: "/home/groups/rsu/dauksaite_v/resources/truth_vcf/HG002_GRCh38_v5.0q_smvar.benchmark.bed"
+targets_bed: "/home/groups/rsu/dauksaite_v/resources/Twist_WESwithRefSeq_umap_s100_70_no_blacklist_hg38_PAR_regions.bed"
+
+genome: "GATK.GRCh38"
+igenomes_base: "/home/groups/rsu/dauksaite_v/igenomes"
+
+preprocess: "normalize,deduplicate,filter_contigs"
