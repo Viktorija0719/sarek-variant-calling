@@ -2,7 +2,7 @@
 #PBS -N sarek_full_chain
 #PBS -q long
 #PBS -l nodes=1:ppn=4,mem=32g
-#PBS -l walltime=720:00:00
+#PBS -l walltime=160:00:00
 #PBS -j oe
 
 set -euo pipefail
@@ -60,10 +60,10 @@ run_python_step() {
 }
 
 # --- sanity checks ---
-test -f params.yaml
-test -f params_variantbenchmarking_small.yaml
-test -f params_variantbenchmarking_structural.yaml
-test -f params_annotate_tp.yaml
+test -f params/params.yaml
+test -f params/params_variantbenchmarking_small.yaml
+test -f params/params_variantbenchmarking_structural.yaml
+test -f params/params_annotate_tp.yaml
 test -f samplesheet.csv
 test -f conf/rtu_pbs.config
 test -f scripts/generate_variantbenchmarking_samplesheets.py
@@ -80,7 +80,7 @@ activate_nextflow_env
 
 nextflow run nf-core/sarek -r 3.8.1 \
   -profile singularity \
-  -params-file params.yaml \
+  -params-file params/params.yaml \
   -c conf/rtu_pbs.config \
   -work-dir "$WORKDIR_SAREK" \
   -with-report "$LOGDIR/report.html" \
@@ -109,7 +109,7 @@ activate_nextflow_env
 
 nextflow run nf-core/variantbenchmarking -r 1.4.0 \
   -profile singularity \
-  -params-file params_variantbenchmarking_small.yaml \
+  -params-file params/params_variantbenchmarking_small.yaml \
   -c conf/rtu_pbs.config \
   -work-dir "$WORKDIR_VB_SMALL" \
   -with-report "$LOGDIR/variantbenchmarking_small_report.html" \
@@ -127,7 +127,7 @@ activate_nextflow_env
 
 nextflow run nf-core/variantbenchmarking -r 1.4.0 \
   -profile singularity \
-  -params-file params_variantbenchmarking_structural.yaml \
+  -params-file params/params_variantbenchmarking_structural.yaml \
   -c conf/rtu_pbs.config \
   -work-dir "$WORKDIR_VB_STRUCT" \
   -with-report "$LOGDIR/variantbenchmarking_structural_report.html" \
@@ -155,7 +155,7 @@ activate_nextflow_env
 
 nextflow run nf-core/sarek -r 3.8.1 \
   -profile singularity \
-  -params-file params_annotate_tp.yaml \
+  -params-file params/params_annotate_tp.yaml \
   -c conf/rtu_pbs.config \
   -work-dir "$WORKDIR_ANNOTATE" \
   -with-report "$LOGDIR/annotate_tp_report.html" \
