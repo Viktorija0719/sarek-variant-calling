@@ -2,7 +2,7 @@
 #PBS -N sarek_full_chain
 #PBS -q long
 #PBS -l nodes=1:ppn=4,mem=32g
-#PBS -l walltime=160:00:00
+#PBS -l walltime=720:00:00
 #PBS -j oe
 
 set -euo pipefail
@@ -18,14 +18,11 @@ cd "$BASE"
 
 PROJECT_NAME="$(basename "$BASE")"
 LOGDIR="$BASE/logs"
-DX_ENV="$BASE/../venvs/dx_py39"
+VENV_PATH="$BASE/.venv"
 
 mkdir -p "$LOGDIR"
 
-# --- modules / runtime ---
-module load java/jdk-21.0.2
-module load singularity || true
-
+# --- Nextflow / cache settings ---
 export NXF_VER=25.10.4
 export NXF_HOME="/home_beegfs/$USER/.nextflow"
 export NXF_SINGULARITY_CACHEDIR="/home_beegfs/$USER/.singularity"
@@ -40,26 +37,21 @@ WORKDIR_ANNOTATE="/home_beegfs/$USER/nxf_work/${PROJECT_NAME}_annotate_tp"
 
 mkdir -p "$WORKDIR_SAREK" "$WORKDIR_VB_SMALL" "$WORKDIR_VB_STRUCT" "$WORKDIR_ANNOTATE"
 
-# --- sanity checks ---
-test -f params/params.yaml
-test -f params/params_variantbenchmarking_small.yaml
-test -f params/params_variantbenchmarking_structural.yaml
-test -f params/params_annotate_tp.yaml
-test -f samplesheet.csv
-test -f conf/rtu_pbs.config
-test -f scripts/generate_variantbenchmarking_samplesheets.py
-test -f scripts/generate_samplesheet_annotate_tp.py
-test -d "$DX_ENV"
-
-nextflow -version
+activate_nextflow_env() {
+    module purge
+    module load java/jdk-21.0.2
+    module load singularity || true
+    nextflow -version
+}
 
 run_python_step() {
     local script_path="$1"
     log "Running Python step: $script_path"
     (
         set -euo pipefail
+        module purge
         module load python/3.9.19
-        source "$DX_ENV/bin/activate"
+        source "$VENV_PATH/bin/activate"
         which python3
         python3 --version
         python3 "$script_path"
@@ -67,14 +59,28 @@ run_python_step() {
     log "Finished Python step: $script_path"
 }
 
+# --- sanity checks ---
+test -f params.yaml
+test -f params_variantbenchmarking_small.yaml
+test -f params_variantbenchmarking_structural.yaml
+test -f params_annotate_tp.yaml
+test -f samplesheet.csv
+test -f conf/rtu_pbs.config
+test -f scripts/generate_variantbenchmarking_samplesheets.py
+test -f scripts/generate_samplesheet_annotate_tp.py
+test -f scripts/merge_sv_vcfs.py
+test -f scripts/merge_snv_vcfs.py
+test -d "$VENV_PATH"
+
 # ============================================================
 # STEP 1: nf-core/sarek germline WES calling
 # ============================================================
 log "STEP 1 START: nf-core/sarek germline WES"
+activate_nextflow_env
 
 nextflow run nf-core/sarek -r 3.8.1 \
   -profile singularity \
-  -params-file params/params.yaml \
+  -params-file params.yaml \
   -c conf/rtu_pbs.config \
   -work-dir "$WORKDIR_SAREK" \
   -with-report "$LOGDIR/report.html" \
@@ -88,7 +94,6 @@ log "STEP 1 DONE"
 # STEP 2: generate variantbenchmarking samplesheets
 # ============================================================
 log "STEP 2 START: generate benchmark samplesheets"
-
 run_python_step "scripts/generate_variantbenchmarking_samplesheets.py"
 
 test -s benchmark_small_samplesheet.csv
@@ -97,13 +102,14 @@ test -s benchmark_structural_samplesheet.csv
 log "STEP 2 DONE"
 
 # ============================================================
-# STEP 3: nf-core/variantbenchmarking
+# STEP 3A: nf-core/variantbenchmarking small
 # ============================================================
 log "STEP 3A START: variantbenchmarking small"
+activate_nextflow_env
 
 nextflow run nf-core/variantbenchmarking -r 1.4.0 \
   -profile singularity \
-  -params-file params/params_variantbenchmarking_small.yaml \
+  -params-file params_variantbenchmarking_small.yaml \
   -c conf/rtu_pbs.config \
   -work-dir "$WORKDIR_VB_SMALL" \
   -with-report "$LOGDIR/variantbenchmarking_small_report.html" \
@@ -113,11 +119,15 @@ nextflow run nf-core/variantbenchmarking -r 1.4.0 \
 
 log "STEP 3A DONE"
 
+# ============================================================
+# STEP 3B: nf-core/variantbenchmarking structural
+# ============================================================
 log "STEP 3B START: variantbenchmarking structural"
+activate_nextflow_env
 
 nextflow run nf-core/variantbenchmarking -r 1.4.0 \
   -profile singularity \
-  -params-file params/params_variantbenchmarking_structural.yaml \
+  -params-file params_variantbenchmarking_structural.yaml \
   -c conf/rtu_pbs.config \
   -work-dir "$WORKDIR_VB_STRUCT" \
   -with-report "$LOGDIR/variantbenchmarking_structural_report.html" \
@@ -131,7 +141,6 @@ log "STEP 3B DONE"
 # STEP 4: generate samplesheet for TP annotation
 # ============================================================
 log "STEP 4 START: generate annotate_tp samplesheet"
-
 run_python_step "scripts/generate_samplesheet_annotate_tp.py"
 
 test -s samplesheet_annotate_tp.csv
@@ -142,10 +151,11 @@ log "STEP 4 DONE"
 # STEP 5: annotate TP VCFs with Sarek
 # ============================================================
 log "STEP 5 START: nf-core/sarek annotation of TP VCFs"
+activate_nextflow_env
 
 nextflow run nf-core/sarek -r 3.8.1 \
   -profile singularity \
-  -params-file params/params_annotate_tp.yaml \
+  -params-file params_annotate_tp.yaml \
   -c conf/rtu_pbs.config \
   -work-dir "$WORKDIR_ANNOTATE" \
   -with-report "$LOGDIR/annotate_tp_report.html" \
@@ -155,4 +165,34 @@ nextflow run nf-core/sarek -r 3.8.1 \
 
 log "STEP 5 DONE"
 
+# ============================================================
+# STEP 6: merge annotated TP callsets
+# ============================================================
+log "STEP 6 START: merge annotated TP callsets"
+(
+    set -euo pipefail
+    module purge
+    module load python/3.9.19
+    source "$VENV_PATH/bin/activate"
+
+    python3 scripts/merge_sv_vcfs.py \
+      --annotation-dir results_annotation_tp_structural/annotation \
+      --callers manta,tiddit \
+      --emit-split \
+      --out-xlsx merged_sv.xlsx \
+      --out-tsv-dir merged_sv
+
+    python3 scripts/merge_snv_vcfs.py \
+      --annotation-dir results_annotation_tp_small/annotation \
+      --callers deepvariant,freebayes,strelka \
+      --out-xlsx merged_snv.xlsx \
+      --out-tsv-dir merged_snv
+)
+
+test -s merged_sv.xlsx
+test -s merged_snv.xlsx
+test -d merged_sv
+test -d merged_snv
+
+log "STEP 6 DONE"
 log "ALL STEPS COMPLETED SUCCESSFULLY"

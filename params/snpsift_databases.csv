@@ -1,0 +1,2 @@
+vcf,tbi,fields,prefix,vardb
+/home/groups/rsu/dauksaite_v/resources/annotation/clinvar.vcf.gz,/home/groups/rsu/dauksaite_v/resources/annotation/clinvar.vcf.gz.tbi,CLNSIG;CLNDN;CLNREVSTAT;ALLELEID;CLNVC,ClinVar_,

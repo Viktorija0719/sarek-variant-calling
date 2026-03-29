@@ -7,7 +7,7 @@ igenomes_base: "/home/groups/rsu/dauksaite_v/igenomes"
 
 # Annotation only
 # Keep only annotation-related tools here.
-tools: "vep,snpeff,merge"
+tools: "vep,snpeff,snpsift,merge"
 
 # VEP cache
 vep_cache: "/home/groups/rsu/dauksaite_v/resources/sarek_cache/vep_cache"
@@ -18,6 +18,8 @@ vep_species: "homo_sapiens"
 # SnpEff cache
 snpeff_cache: "/home/groups/rsu/dauksaite_v/resources/sarek_cache/snpeff_cache"
 snpeff_db: "GRCh38.99"
+
+snpsift_databases: "params/snpsift_databases.csv"
 
 # Extra VEP plugin annotations
 vep_spliceai: true
