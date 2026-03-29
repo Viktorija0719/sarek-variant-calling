@@ -175,18 +175,20 @@ log "STEP 6 START: merge annotated TP callsets"
     module load python/3.9.19
     source "$VENV_PATH/bin/activate"
 
+
+    python3 scripts/merge_snv_vcfs.py \
+      --annotation-dir results_annotation_tp/annotation \
+      --callers deepvariant,freebayes,strelka,haplotypecaller \
+      --out-xlsx merged_snv.xlsx \
+      --out-tsv-dir merged_snv
+
     python3 scripts/merge_sv_vcfs.py \
-      --annotation-dir results_annotation_tp_structural/annotation \
+      --annotation-dir results_annotation_tp/annotation \
       --callers manta,tiddit \
       --emit-split \
       --out-xlsx merged_sv.xlsx \
       --out-tsv-dir merged_sv
-
-    python3 scripts/merge_snv_vcfs.py \
-      --annotation-dir results_annotation_tp_small/annotation \
-      --callers deepvariant,freebayes,strelka \
-      --out-xlsx merged_snv.xlsx \
-      --out-tsv-dir merged_snv
+        
 )
 
 test -s merged_sv.xlsx
