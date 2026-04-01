@@ -6,10 +6,10 @@ variant_type: "structural"
 method: "truvari"
 
 truth_id: "HG002"
-truth_vcf: "/home/groups/rsu/dauksaite_v/resources/truth_vcf/HG002_GRCh38_v5.0q_stvar.vcf.gz"
-regions_bed: "/home/groups/rsu/dauksaite_v/resources/truth_vcf/HG002_GRCh38_v5.0q_stvar.benchmark.bed"
+truth_vcf: "/home/groups/rsu/nf-core-variant-calling/truth_vcf/HG002_GRCh38_v5.0q_stvar.vcf.gz"
+regions_bed: "/home/groups/rsu/nf-core-variant-calling/truth_vcf/HG002_GRCh38_v5.0q_stvar.benchmark.bed"
 
 genome: "GATK.GRCh38"
-igenomes_base: "/home/groups/rsu/dauksaite_v/igenomes"
+igenomes_base: "/home/groups/rsu/nf-core-variant-calling/igenomes"
 
 preprocess: "deduplicate,filter_contigs"
