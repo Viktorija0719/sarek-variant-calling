@@ -31,11 +31,12 @@ export NXF_OPTS='-Xms1g -Xmx6g'
 mkdir -p "$NXF_HOME" "$NXF_SINGULARITY_CACHEDIR"
 
 WORKDIR_SAREK="/home_beegfs/$USER/nxf_work/${PROJECT_NAME}"
+WORKDIR_GERMLINE="/home_beegfs/$USER/nxf_work/${PROJECT_NAME}_germline"
 WORKDIR_VB_SMALL="/home_beegfs/$USER/nxf_work/${PROJECT_NAME}_variantbenchmarking_small"
 WORKDIR_VB_STRUCT="/home_beegfs/$USER/nxf_work/${PROJECT_NAME}_variantbenchmarking_structural"
 WORKDIR_ANNOTATE="/home_beegfs/$USER/nxf_work/${PROJECT_NAME}_annotate_tp"
 
-mkdir -p "$WORKDIR_SAREK" "$WORKDIR_VB_SMALL" "$WORKDIR_VB_STRUCT" "$WORKDIR_ANNOTATE"
+mkdir -p "$WORKDIR_SAREK" "$WORKDIR_GERMLINE" "$WORKDIR_VB_SMALL" "$WORKDIR_VB_STRUCT" "$WORKDIR_ANNOTATE"
 
 activate_nextflow_env() {
     module purge
@@ -61,11 +62,14 @@ run_python_step() {
 
 # --- sanity checks ---
 test -f params/params.yaml
+test -f params/params_bam.yaml
 test -f params/params_variantbenchmarking_small.yaml
 test -f params/params_variantbenchmarking_structural.yaml
 test -f params/params_annotate_tp.yaml
 test -f samplesheet.csv
 test -f conf/rtu_pbs.config
+test -f conf/match_pipeline_nextflow.config
+test -f scripts/generate_bam_samplesheet.py
 test -f scripts/generate_variantbenchmarking_samplesheets.py
 test -f scripts/generate_samplesheet_annotate_tp.py
 test -f scripts/merge_sv_vcfs.py
@@ -91,20 +95,58 @@ nextflow run nf-core/sarek -r 3.8.1 \
 log "STEP 1 DONE"
 
 # ============================================================
-# STEP 2: generate variantbenchmarking samplesheets
+# STEP 2: generate BAM samplesheet from Sarek cram_to_bam output
 # ============================================================
-log "STEP 2 START: generate benchmark samplesheets"
+log "STEP 2 START: generate BAM samplesheet"
+(
+    set -euo pipefail
+    module purge
+    module load python/3.9.19
+    source "$VENV_PATH/bin/activate"
+    python3 scripts/generate_bam_samplesheet.py \
+      --project-dir "$BASE" \
+      --out samplesheet_bam.csv
+)
+
+test -s samplesheet_bam.csv
+
+log "STEP 2 DONE"
+
+# ============================================================
+# STEP 3: germline small variant calling + annotation
+#         (DeepVariant + Strelka2, matching pipeline_nextflow.txt)
+# ============================================================
+log "STEP 3 START: germline small variant calling"
+activate_nextflow_env
+
+nextflow run Viktorija0719/germline-nextflow \
+  -profile singularity \
+  -params-file params/params_bam.yaml \
+  -c conf/rtu_pbs.config \
+  -c conf/match_pipeline_nextflow.config \
+  -work-dir "$WORKDIR_GERMLINE" \
+  -with-report "$LOGDIR/germline_report.html" \
+  -with-timeline "$LOGDIR/germline_timeline.html" \
+  -with-trace "$LOGDIR/germline_trace.txt" \
+  -resume
+
+log "STEP 3 DONE"
+
+# ============================================================
+# STEP 4: generate variantbenchmarking samplesheets
+# ============================================================
+log "STEP 4 START: generate benchmark samplesheets"
 run_python_step "scripts/generate_variantbenchmarking_samplesheets.py"
 
 test -s benchmark_small_samplesheet.csv
 test -s benchmark_structural_samplesheet.csv
 
-log "STEP 2 DONE"
+log "STEP 4 DONE"
 
 # ============================================================
-# STEP 3A: nf-core/variantbenchmarking small
+# STEP 5A: nf-core/variantbenchmarking small
 # ============================================================
-log "STEP 3A START: variantbenchmarking small"
+log "STEP 5A START: variantbenchmarking small"
 activate_nextflow_env
 
 nextflow run nf-core/variantbenchmarking -r 1.4.0 \
@@ -117,12 +159,12 @@ nextflow run nf-core/variantbenchmarking -r 1.4.0 \
   -with-trace "$LOGDIR/variantbenchmarking_small_trace.txt" \
   -resume
 
-log "STEP 3A DONE"
+log "STEP 5A DONE"
 
 # ============================================================
-# STEP 3B: nf-core/variantbenchmarking structural
+# STEP 5B: nf-core/variantbenchmarking structural
 # ============================================================
-log "STEP 3B START: variantbenchmarking structural"
+log "STEP 5B START: variantbenchmarking structural"
 activate_nextflow_env
 
 nextflow run nf-core/variantbenchmarking -r 1.4.0 \
@@ -135,22 +177,22 @@ nextflow run nf-core/variantbenchmarking -r 1.4.0 \
   -with-trace "$LOGDIR/variantbenchmarking_structural_trace.txt" \
   -resume
 
-log "STEP 3B DONE"
+log "STEP 5B DONE"
 
 # ============================================================
-# STEP 4: generate samplesheet for TP annotation
+# STEP 6: generate samplesheet for TP annotation
 # ============================================================
-log "STEP 4 START: generate annotate_tp samplesheet"
+log "STEP 6 START: generate annotate_tp samplesheet"
 run_python_step "scripts/generate_samplesheet_annotate_tp.py"
 
 test -s samplesheet_annotate_tp.csv
 
-log "STEP 4 DONE"
+log "STEP 6 DONE"
 
 # ============================================================
-# STEP 5: annotate TP VCFs with Sarek
+# STEP 7: annotate TP VCFs with Sarek
 # ============================================================
-log "STEP 5 START: nf-core/sarek annotation of TP VCFs"
+log "STEP 7 START: nf-core/sarek annotation of TP VCFs"
 activate_nextflow_env
 
 nextflow run nf-core/sarek -r 3.8.1 \
@@ -163,18 +205,17 @@ nextflow run nf-core/sarek -r 3.8.1 \
   -with-trace "$LOGDIR/annotate_tp_trace.txt" \
   -resume
 
-log "STEP 5 DONE"
+log "STEP 7 DONE"
 
 # ============================================================
-# STEP 6: merge annotated TP callsets
+# STEP 8: merge annotated TP callsets
 # ============================================================
-log "STEP 6 START: merge annotated TP callsets"
+log "STEP 8 START: merge annotated TP callsets"
 (
     set -euo pipefail
     module purge
     module load python/3.9.19
     source "$VENV_PATH/bin/activate"
-
 
     python3 scripts/merge_snv_vcfs.py \
       --annotation-dir results_annotation_tp/annotation \
@@ -188,7 +229,6 @@ log "STEP 6 START: merge annotated TP callsets"
       --emit-split \
       --out-xlsx merged_sv.xlsx \
       --out-tsv-dir merged_sv
-        
 )
 
 test -s merged_sv.xlsx
@@ -196,5 +236,5 @@ test -s merged_snv.xlsx
 test -d merged_sv
 test -d merged_snv
 
-log "STEP 6 DONE"
+log "STEP 8 DONE"
 log "ALL STEPS COMPLETED SUCCESSFULLY"

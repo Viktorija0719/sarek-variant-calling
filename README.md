@@ -1,152 +1,50 @@
-# nf-core/sarek on RTU HPC (PBS)
-
-[nf-core/sarek](https://nf-co.re/sarek/3.8.1/) is a workflow designed to detect variants on whole genome or targeted sequencing data. Sarek can also handle tumour / normal pairs and could include additional relapses.
-
-This setup keeps shared RSU resources in `/home/groups/rsu/dauksaite_v/` and avoids hardcoding personal `/home_beegfs/<user>/…` paths (uses project-relative paths + `$USER` in the PBS script).
-
-## 1) Install Nextflow (login node)
-
-Requires: `java/jdk-21.0.2`.
-
-```bash
-module load java/jdk-21.0.2
-
-wget -qO- https://get.nextflow.io | bash
-mkdir -p ~/bin && mv nextflow ~/bin
-echo 'export PATH=$HOME/bin:$PATH' >> ~/.bashrc
-source ~/.bashrc
-
-nextflow info
-````
-
-## 2) Pull the pipeline
-
-```bash
-nextflow pull nf-core/sarek
-nextflow pull nf-core/variantbenchmarking
-
-module purge
-module load python/3.9.19
-
-python3 -m venv .venv
-source .venv/bin/activate
-python3 -m pip install --upgrade pip
-pip install -r requirements.txt
-
-```
-
-## Quick test run (recommended)
-
-To test that everything works on RTU HPC, submit the PBS script:
-
-```bash
-qsub /path/to/run_all.pbs
-```
-
-The test samples used in this project come from:
-
-**Project:** PRJNA60113
-
-Exome sequencing of (GBR) British from England and Scotland HapMap population
-
-
-
-## Run germline variant calling
-
-1. Create `samplesheet.csv` in your working directory following:
-   [https://nf-co.re/sarek/3.8.1/docs/usage/#input-sample-sheet-configurations](https://nf-co.re/sarek/3.8.1/docs/usage/#input-sample-sheet-configurations)
-
-2. Submit the run:
-
-```bash
-qsub run_all.pbs
-```
-
-## Expected outputs
-
-`results/` will contain:
-
-* `preprocessing/` (alignment, markduplicates, BQSR, CRAM/BAM)
-* `variant_calling/` (per-tool callsets + `haplotypecaller/joint_variant_calling/` if enabled)
-* `annotation/` (VEP / snpEff annotated results per caller)
-* `multiqc/multiqc_report.html`
-* `pipeline_info/` (params JSON, DAGs, software versions)
-
-Tool folders appear only for enabled tools (e.g., deepvariant/freebayes/haplotypecaller/manta/tiddit/cnvkit/indexcov/vep/snpeff).
-
-
-
-
-**Outputs**
-
-* `merged_sv.xlsx` + `merged_sv/*.tsv` (one sheet / TSV per sample)
-* `merged_snv.xlsx` + `merged_snv/*.tsv` (one sheet / TSV per sample)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # sarek-variant-calling on RTU HPC (PBS)
 
-Pipeline for germline variant calling, benchmarking, annotation, and post-processing on the RTU HPC cluster using [nf-core/sarek](https://nf-co.re/sarek/3.8.1/) and [nf-core/variantbenchmarking](https://nf-co.re/variantbenchmarking/1.4.0/).
+Pipeline for germline variant calling, benchmarking, annotation, and post-processing on the RTU HPC cluster using [nf-core/sarek](https://nf-co.re/sarek/3.8.1/), [Viktorija0719/germline-nextflow](https://github.com/Viktorija0719/germline-nextflow), and [nf-core/variantbenchmarking](https://nf-co.re/variantbenchmarking/1.4.0/).
 
-This setup is designed for **RTU HPC with PBS**, uses **shared RSU reference resources** under `/home/groups/rsu/dauksaite_v/`, and avoids hardcoding personal paths where possible.
+Designed for **RTU HPC with PBS**, uses **shared RSU reference resources** under `/home/groups/rsu/dauksaite_v/`, and avoids hardcoding personal paths where possible.
+
+---
 
 ## Overview
 
-This project supports:
+The full pipeline (`run_all.pbs`) runs 8 sequential steps:
 
-- germline variant calling from FASTQ input with `nf-core/sarek`
-- benchmarking of small and structural variants with `nf-core/variantbenchmarking`
-- annotation of selected VCFs
-- merging annotated SNV/indel and SV callsets into per-sample tables
+| Step | Description |
+|------|-------------|
+| 1 | `nf-core/sarek` — FASTQ → BAM, CRAM, initial VCF calling |
+| 2 | `generate_bam_samplesheet.py` — build `samplesheet_bam.csv` from Sarek BAM outputs |
+| 3 | `Viktorija0719/germline-nextflow` — DeepVariant + Strelka2 small variant calling matching `pipeline_nextflow.txt` |
+| 4 | `generate_variantbenchmarking_samplesheets.py` — prepare benchmark inputs |
+| 5A | `nf-core/variantbenchmarking` — small variant benchmarking |
+| 5B | `nf-core/variantbenchmarking` — structural variant benchmarking |
+| 6 | `generate_samplesheet_annotate_tp.py` — prepare TP annotation inputs |
+| 7 | `nf-core/sarek` — annotate TP VCFs (VEP / snpEff) |
+| 8 | `merge_snv_vcfs.py` + `merge_sv_vcfs.py` — merge annotated callsets to Excel/TSV |
 
-The workflow is intended for **whole-exome sequencing (WES)** but can be adapted for other targeted data.
+The workflow is intended for **whole-exome sequencing (WES)**.
 
-
+---
 
 ## Requirements
 
-### RTU HPC environment
+### RTU HPC modules
 
-* Java module:
-
-  * `java/jdk-21.0.2`
-* Python module:
-
-  * `python/3.9.19`
+- `java/jdk-21.0.2`
+- `python/3.9.19`
+- `singularity`
 
 ### Shared reference resources
 
-This setup expects shared RSU resources under:
+Expected under:
 
-```bash
+```
 /home/groups/rsu/dauksaite_v/
 ```
 
-These include:
+Includes iGenomes reference files, truth VCFs, benchmark BED files, annotation resources, and VEP/snpEff caches.
 
-* iGenomes reference files
-* truth VCFs and benchmark BED files
-* annotation resources
-* cache files for tools such as VEP and snpEff
+---
 
 ## Installation
 
@@ -169,9 +67,10 @@ nextflow info
 ```bash
 nextflow pull nf-core/sarek -r 3.8.1
 nextflow pull nf-core/variantbenchmarking -r 1.4.0
+nextflow pull Viktorija0719/germline-nextflow
 ```
 
-### 3. Create the Python environment for downstream merging scripts
+### 3. Create the Python environment
 
 ```bash
 module purge
@@ -183,26 +82,11 @@ python3 -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-## Quick test run
+---
 
-To test that the setup works on RTU HPC, submit:
+## Input files
 
-```bash
-qsub run_all.pbs
-```
-
-The test samples used in this project come from:
-
-* **Project:** `PRJNA60113`
-* **Description:** Exome sequencing of GBR (British from England and Scotland) HapMap population
-
-## Input
-
-### Main Sarek samplesheet
-
-Create `samplesheet.csv` in the working directory.
-
-Example:
+### `samplesheet.csv` (Step 1 — Sarek FASTQ input)
 
 ```csv
 patient,sex,status,sample,lane,fastq_1,fastq_2
@@ -210,45 +94,83 @@ ERR031932,XY,0,ERR031932,L001,/path/to/ERR031932_1.fastq.gz,/path/to/ERR031932_2
 ERR031933,XY,0,ERR031933,L001,/path/to/ERR031933_1.fastq.gz,/path/to/ERR031933_2.fastq.gz
 ```
 
-See the official Sarek documentation for supported sample sheet formats:
+See the [nf-core/sarek samplesheet documentation](https://nf-co.re/sarek/3.8.1/docs/usage/#input-sample-sheet-configurations).
 
-* [nf-core/sarek input samplesheet documentation](https://nf-co.re/sarek/3.8.1/docs/usage/#input-sample-sheet-configurations)
+### `params/params_bam.yaml` (Step 3 — germline-nextflow)
 
+Must point `input` to the BAM samplesheet generated in Step 2:
 
+```yaml
+input: samplesheet_bam.csv
+variant_target_bed: "/path/to/your/target_regions.bed"
+genome: GATK.GRCh38
+outdir: results_germline
+# ... other germline-nextflow params
+```
 
+### `conf/match_pipeline_nextflow.config` (Step 3)
 
+Applies DeepVariant + Strelka2 settings matching `pipeline_nextflow.txt`:
 
-## Final merged outputs
+- `no_intervals = true` — one DeepVariant job per sample on full BED
+- `wes = true` — WES model
+- `deepvariant_args = '--postprocess_variants_extra_args=only_keep_pass=true'`
+- `combine_dv_strelka_enable = true` — merges DV + Strelka2 VCFs
+- `cpus = 64` for DeepVariant (`--num_shards=64`)
+- `ext.args = '--exome --callContinuousVf chrM'` for Strelka2
 
-Post-processing produces:
+Reduce `cpus` to `24` or `16` if 64-core nodes are unavailable on the cluster.
 
-* `merged_sv.xlsx`
-* `merged_sv/*.tsv`
-* `merged_snv.xlsx`
-* `merged_snv/*.tsv`
+---
 
-These are organized as:
+## Running
 
-* **one Excel workbook per variant type**
-* **one sheet per sample**
-* **one TSV per sample**
-
-## Notes
-
-* Shared RSU resources are kept under `/home/groups/rsu/dauksaite_v/`.
-* User-specific caches and work directories are created under `/home_beegfs/$USER/`.
-* Project-level scripts use project-relative paths where possible.
-* Large temporary work directories must be visible from compute nodes.
-
-## Example user-specific cache and work paths
-
-Used in PBS scripts:
+Submit the full pipeline:
 
 ```bash
-NXF_HOME=/home_beegfs/$USER/.nextflow
-NXF_SINGULARITY_CACHEDIR=/home_beegfs/$USER/.singularity
-/home_beegfs/$USER/nxf_work/
+qsub run_all.pbs
 ```
+
+The test samples used in this project come from:
+
+- **Project:** `PRJNA60113`
+- **Description:** Exome sequencing of GBR (British from England and Scotland) HapMap population
+
+---
+
+## Outputs
+
+### Intermediate
+
+| File | Produced by |
+|------|-------------|
+| `samplesheet_bam.csv` | Step 2 — BAM paths from Sarek cram_to_bam output |
+| `benchmark_small_samplesheet.csv` | Step 4 |
+| `benchmark_structural_samplesheet.csv` | Step 4 |
+| `samplesheet_annotate_tp.csv` | Step 6 |
+
+### Final merged callsets (Step 8)
+
+- `merged_snv.xlsx` + `merged_snv/*.tsv` — one sheet/TSV per sample
+- `merged_sv.xlsx` + `merged_sv/*.tsv` — one sheet/TSV per sample
+
+---
+
+## Logs
+
+All logs land in `logs/`:
+
+| Log file | Step |
+|----------|------|
+| `report.html`, `timeline.html`, `trace.txt` | Step 1 (Sarek) |
+| `germline_report.html`, `germline_timeline.html`, `germline_trace.txt` | Step 3 (germline-nextflow) |
+| `variantbenchmarking_small_*.html/txt` | Step 5A |
+| `variantbenchmarking_structural_*.html/txt` | Step 5B |
+| `annotate_tp_*.html/txt` | Step 7 |
+
+PBS job output: `*.o<jobid>` in the working directory.
+
+---
 
 ## Troubleshooting
 
@@ -258,36 +180,20 @@ NXF_SINGULARITY_CACHEDIR=/home_beegfs/$USER/.singularity
 qstat
 ```
 
-### Inspect logs
-
-PBS output and workflow logs are useful for debugging:
-
-* `*.o<jobid>`
-* `logs/report.html`
-* `logs/timeline.html`
-* `logs/trace.txt`
-* `.nextflow.log`
-
 ### Resume failed runs
 
-All provided scripts use:
+All steps use `-resume`, so reruns reuse completed Nextflow work.
 
-```bash
--resume
-```
+### Paths
 
-so reruns will reuse completed steps when possible.
+- User caches: `/home_beegfs/$USER/.nextflow`, `/home_beegfs/$USER/.singularity`
+- Work directories: `/home_beegfs/$USER/nxf_work/<project>*`
+- Shared RSU resources: `/home/groups/rsu/dauksaite_v/`
+
+---
 
 ## Acknowledgements
 
-This project uses:
-
-* [nf-core/sarek](https://nf-co.re/sarek/3.8.1/)
-* [nf-core/variantbenchmarking](https://nf-co.re/variantbenchmarking/1.4.0/)
-
-
-
-
-
-
-
+- [nf-core/sarek](https://nf-co.re/sarek/3.8.1/)
+- [Viktorija0719/germline-nextflow](https://github.com/Viktorija0719/germline-nextflow)
+- [nf-core/variantbenchmarking](https://nf-co.re/variantbenchmarking/1.4.0/)

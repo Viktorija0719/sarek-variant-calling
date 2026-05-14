@@ -1,0 +1,47 @@
+# Project-relative paths 
+input: "samplesheet_4.csv"
+outdir: "results_4"
+
+# Shared RSU reference resources (keep absolute)
+genome: "GATK.GRCh38"
+igenomes_base: "/home/groups/rsu/nf-core-variant-calling/igenomes"
+
+wes: true
+
+# Canonical (unpadded) target BED — used directly by QC and CNV tools.
+# The pipeline derives the +100 bp padded+merged BED from this and stores it
+# in resources/ for use by variant callers (Strelka, Manta, DeepVariant).
+master_bed: "/home/groups/rsu/nf-core-variant-calling/Twist_WESwithRefSeq_umap_s100_70_no_blacklist_hg38_PAR_regions.bed"
+
+# --- Tool toggles (edit here instead of passing on command line) ---
+deepvariant_enable: false
+strelka_enable: false
+manta_enable: true
+xhmm_enable: true
+exomedepth_enable: true
+depthofcoverage_enable: true
+
+# --- QC toggles ---
+fastqc_enable: false
+
+
+svdb_enable: true
+
+# --- SVDB frequency filter ---
+# Set to false to skip the FRQ filter; AnnotSV (if enabled) will then use
+# the raw SVDB-query VCFs instead of the frequency-filtered ones.
+frq_enable: true
+
+# --- AnnotSV annotation ---
+annotsv_enable: true
+# Path to the extracted AnnotSV annotations directory (not the .tar.gz).
+# Path to the AnnotSV annotations directory.
+# The 3.1.3 archive extracts to AnnotSV_3.1.3_reference/AnnotSV/ — use that inner path.
+annotsv_annotations_dir: "/home/groups/rsu/nf-core-variant-calling/annotation/AnnotSV_3.1.3_reference/AnnotSV"
+annotsv_config_file: "/home/groups/rsu/nf-core-variant-calling/annotation/AnnotSV_configfile_220124_rsu.txt"
+annotsv_panels_tsv: "/home/groups/rsu/nf-core-variant-calling/annotation/AnnotSV_panels_superpanels_v07092023_RSU_seqr.tsv"
+
+# --- knotAnnotSV (AnnotSV TSV → Excel) ---
+knotannotsv_enable: true
+# Custom knotAnnotSV config (pass empty string to use container default)
+knotannotsv_config_file: "/home/groups/rsu/nf-core-variant-calling/annotation/knotAnnotSV_configfile_xlsm_220124.txt"   
